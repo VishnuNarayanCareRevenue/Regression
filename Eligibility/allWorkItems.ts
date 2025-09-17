@@ -19,12 +19,16 @@ export class allWorkItem{
     readonly onDemandRequest:Locator;
     readonly saveAddItemModal:Locator;
     readonly priorityField :Locator;
-
     readonly addNewFilter:Locator;
     readonly itemIdField:Locator;
     readonly idInputField:Locator;
     readonly filterDelete:Locator;
-    readonly workItemListCount;
+    readonly workItemListCount:Locator;
+    readonly successToaster:Locator;
+    readonly filteredItem:Locator;
+    readonly performIVButton:Locator;
+    readonly eligibilitySaveButton:Locator;
+    readonly statusField:Locator;
 
     constructor(page: Page) {
     this.page = page;
@@ -42,12 +46,16 @@ export class allWorkItem{
     this.onDemandRequest=this.page.locator("//label[@formcontrolname='isOnDemandRequest']//input")
     this.saveAddItemModal=this.page.locator("//div[contains(@class,'modal-footer')]/button[2]")
     this.priorityField=this.page.locator("//nz-select[@formcontrolname='priority']")
-
     this.addNewFilter=this.page.locator("//a[contains(@class,'add-filter')]/span")
     this.itemIdField=this.page.locator("//input[@placeholder='Item ID']")
     this.idInputField=this.page.locator("//ul[contains(@class,'dropdown-menu')]/li[1]")
     this.filterDelete=this.page.locator("//nz-icon[@nztype='delete']")
     this.workItemListCount=this.page.locator("//div[@class='list-data']//span[contains(@class,'ticket-container')]")
+    this.successToaster=this.page.locator("//div[contains(@class,'ant-message-success')]/span");
+    this.filteredItem=this.page.locator("//div[@class='ant-row list']//span[2]");
+    this.performIVButton=this.page.locator("//div[@class='footer']/button");
+    this.eligibilitySaveButton=this.page.locator("//button[@data-testid='eligibility_save']")
+    this.statusField= this.page.locator("//nz-select[contains(@class,'status-selector')]")
    }
 
 async clickAddItemButton(){
@@ -65,7 +73,7 @@ console.log("Values are:"+assignedUser+""+practice+""+patient)
     await expect(this.itemDropdown).toBeVisible();
     await this.itemDropdown.click();
     await this.page.click('body'); 
-    await this.page.waitForTimeout(3000); 
+    await expect(this.itemDropdown).toBeHidden();
 
    //choose Practice
     await this.practiceField.click();
@@ -73,7 +81,7 @@ console.log("Values are:"+assignedUser+""+practice+""+patient)
     await expect(this.itemDropdown).toBeVisible();
     await this.itemDropdown.click();
     await this.page.click('body'); 
-    await this.page.waitForTimeout(3000); 
+    await expect(this.itemDropdown).toBeHidden();
 
     //choose Patient
     await expect(this.patientField).toBeEnabled();
@@ -81,15 +89,16 @@ console.log("Values are:"+assignedUser+""+practice+""+patient)
     await this.patientField.pressSequentially(patient,{delay:300})
     await expect(this.itemDropdown).toBeVisible();
     await this.page.locator("//nz-option-item[contains(@title,'"+patient+"')]").click()
-    await this.page.click('body'); // close dropdown
-    await this.page.waitForTimeout(3000); 
+    await this.page.click('body'); 
+    await expect(this.itemDropdown).toBeHidden();
 
    // Choose first insurance 
     await expect(this.insuranceField).toBeEnabled();
     await this.insuranceField.click();
     await expect(this.itemDropdown).toBeVisible();
-    await this.itemDropdown.first().click();
-    await this.page.waitForTimeout(5000); 
+    await this.page.locator("//div[@id='cdk-overlay-4']//nz-option-item").click()
+    await this.page.click('body'); 
+    await expect(this.itemDropdown).toBeHidden();
 
    
 }
@@ -104,7 +113,9 @@ console.log("Values are:"+assignedUser+""+practice+""+patient)
   // select the day using an explicit xpath selector
   await this.page.locator(`xpath=//div[contains(@class,'ant-picker-cell-inner') and normalize-space()='${day}']`).click();
   await this.dateConfirmationButton.click();
-  await this.page.waitForTimeout(5000); 
+  await this.page.click('body'); 
+  await expect(this.itemDropdown).toBeHidden();
+ // await this.page.waitForTimeout(5000); 
 
 }
 
@@ -112,7 +123,9 @@ async selectTimeZone(){
    console.log("Entered selectTimeZone method");
    await this.timeZoneDropdown.click();
    await this.itemDropdown.first().click();
-   await this.page.waitForTimeout(5000); 
+   await this.page.click('body'); 
+   await expect(this.itemDropdown).toBeHidden();
+   // await this.page.waitForTimeout(5000); 
 }
 
 async selectLocation(){
@@ -120,13 +133,14 @@ async selectLocation(){
    await expect(this.locationDropdown).toBeEnabled();
    await this.locationDropdown.click();
    await this.itemDropdown.first().click();
-   await this.page.waitForTimeout(5000); 
+   await this.page.click('body'); 
+   await expect(this.itemDropdown).toBeHidden();
 }
 
 async checkOnDemandRequest(){
    console.log("Entered checkOnDemandRequest method");
    await this.onDemandRequest.click();
-   await this.page.waitForTimeout(5000); 
+   await this.page.click('body'); 
 }
 
 async selectPriority(){
@@ -134,49 +148,80 @@ async selectPriority(){
  await expect(this.priorityField).toBeEnabled();
  await this.priorityField.click();
  await this.page.locator("//div[@class='ant-select-item-option-content' and normalize-space()='P3']").click();
- await this.page.waitForTimeout(5000); 
+ await this.page.click('body'); 
+ await expect(this.itemDropdown).toBeHidden();
 }
 
 async saveModal(){
    console.log("Entered saveModal method");
    await this.saveAddItemModal.click();
    await expect (this.page).toHaveURL("https://eligibility.uat.carestack.com/#/all-work-items/iv-items");
-   const toast = this.page.locator("//div[contains(@class,'ant-message-success')]/span");
+   const toast = this.successToaster;
    const messageText = await toast.textContent();
    console.log("Captured messageText:", messageText);
    const match = messageText?.match(/E(\d+)/)
    const workItemId = match ? match[1] : null;
    console.log("Captured Work Item ID:", workItemId);
-   await this.page.waitForTimeout(10000); 
    return workItemId;
 }
 
 async filterById(id:string){
      console.log("Entered filterById method");
+     // Delete exiting filter
      await expect(this.filterDelete).toBeVisible();
      await this.filterDelete.click();
      await this.page.waitForLoadState("networkidle");
+     //Click add new filter 
      await expect(this.addNewFilter).toBeVisible();
      await this.addNewFilter.click();
      await this.page.waitForLoadState("networkidle");
      await this.idInputField.click();
      await this.page.click('body');   
+     //Click item id filter
      await expect(this.itemIdField).toBeEnabled();
      await this.itemIdField.fill(id);
-     await this.page.waitForLoadState("networkidle");
-     await this.page.waitForTimeout(5000); 
-     // Locate all rows inside list-data
-     const rows = this.workItemListCount;
-     // Get the count
-     const rowCount = await rows.count();
+
+     const row = this.page.locator(`text=${id}`);
+     await expect(row).toBeVisible();
+     await expect(this.workItemListCount.first()).toBeVisible();
+  // Verify row count
+     const rowCount = await this.workItemListCount.count();
      console.log("Row count:", rowCount);
-    if(rowCount==1){
-      console.log("Verified Work Item creation");
+     expect(rowCount).toBe(1);
+     console.log("Verified Work Item creation");
     }
-    else{
-      console.log("Work item is not created as expected");
+
+    async clickTheFilteredItem(){
+     console.log("Entered clickTheFilteredItem method");
+     await this.filteredItem.click();
+     await this.page.waitForLoadState("networkidle");
+     await expect(this.filteredItem).toBeVisible({ timeout: 30000 }); 
+    }
+
+    async saveWorkItemModal(){
+      await expect(this.statusField).toBeVisible()
+      await this.statusField.click();
+      await this.page.locator("//nz-option-container[contains(@class,'select-dropdown')]//nz-option-item[2]").click()
+      const saveButton = this.performIVButton.nth(1);
+      await saveButton.click();
+      await this.page.waitForTimeout(5000);
+      
+    }
+     async performIV(){
+      await this.page.getByText("Perform IV").click()
+      //  ])
+      await this.page.waitForLoadState("domcontentloaded");
+
+      // const content = this.page.locator("//button[@data-testid='eligibility_save']");
+      // await expect(content).toBeEnabled({ timeout: 30000 });
+
+      await this.page.waitForSelector("//button[@data-testid='eligibility_save']", { timeout: 30000 });
+      const content = this.page.locator("//button[@data-testid='eligibility_save']");
+      await expect(content).toBeEnabled();
+
+      console.log(await this.page.title());
      }
-    }
+
 }
 
 
